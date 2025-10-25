@@ -7,3 +7,7 @@ pandas
 scikit-learn
 seaborn
 xgboost
+shap
+streamlit
+plotly
+joblib
