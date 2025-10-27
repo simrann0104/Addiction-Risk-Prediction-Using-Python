@@ -29,15 +29,17 @@ Before contributing, please:
 ### Installation
 
 1. Clone the repository:
-\`\`\`bash
-git clone <repository-url>
-cd AddictionRiskPredictionUsingPythonmain
-\`\`\`
+
+   ```bash
+   git clone https://github.com/Ayush-Raj-Chourasia/Addiction-Risk-Prediction-Using-Python.git
+   cd Addiction-Risk-Prediction-Using-Python
+   ```
 
 2. Install dependencies:
-\`\`\`bash
-pip install -r requirements.txt
-\`\`\`
+
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 3. Verify installation by running the notebook or scripts
 
@@ -83,7 +85,7 @@ We welcome various types of contributions:
 - Keep functions focused and modular
 - Maximum line length: 100 characters
 
-### Example:
+### Example
 
 \`\`\`python
 def calculate_risk_score(features: pd.DataFrame) -> np.ndarray:
@@ -132,23 +134,29 @@ Your pull request should:
 ### Pull Request Template
 
 \`\`\`markdown
+
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Documentation update
 - [ ] Performance improvement
 
 ## Testing
+
 Describe how you tested your changes
 
 ## Checklist
+
 - [ ] Code follows project style guidelines
 - [ ] Documentation updated
 - [ ] Changes tested locally
 - [ ] No breaking changes introduced
+
 \`\`\`
 
 ## Reporting Issues
