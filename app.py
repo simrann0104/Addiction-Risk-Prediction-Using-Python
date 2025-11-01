@@ -10,6 +10,8 @@ import joblib
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
+import shap
+import matplotlib.pyplot as plt
 
 # Page configuration
 st.set_page_config(
@@ -72,6 +74,9 @@ def main():
     # Sidebar for input
     st.sidebar.header("📋 Patient Information")
     st.sidebar.markdown("---")
+
+    # Option to show SHAP explanations
+    show_shap = st.sidebar.checkbox("Show SHAP explanations", value=False, help="Compute and display SHAP feature importance and per-sample contributions (requires model and dataset files).")
     
     # Input fields
     age = st.sidebar.slider("Age", min_value=10, max_value=80, value=25, help="Patient's current age")
@@ -293,6 +298,93 @@ def main():
             )
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
+
+            # SHAP explanations (if requested)
+            if show_shap:
+                st.markdown("---")
+                st.subheader("🧭 SHAP Interpretability")
+
+                @st.cache_resource
+                def build_explainer(model):
+                    # Try to load a background dataset for the explainer (keep small)
+                    for path in ('balanced_dataset.csv', 'Cleaned_Dataset_Encoded.xlsx', 'Cleaned_Encoded_Dataset.xlsx'):
+                        try:
+                            if path.endswith('.csv'):
+                                background = pd.read_csv(path)
+                            else:
+                                background = pd.read_excel(path)
+                            # Use only the expected features if present
+                            expected = ['substance_freq', 'first_use_age', 'first_use_age_scaled', 'age', 'age_scaled', 'mental_health_diagnosis', 'stress_level', 'support_system', 'withdrawal_symptoms', 'coping_mechanism']
+                            missing = [c for c in expected if c not in background.columns]
+                            if missing:
+                                # Use columns intersection if some missing
+                                background = background[[c for c in expected if c in background.columns]]
+                            else:
+                                background = background[expected]
+                            # sample to keep explainer fast
+                            background = background.head(200)
+                            explainer = shap.TreeExplainer(model, data=background, model_output='probability')
+                            return explainer, background
+                        except Exception:
+                            continue
+                    return None, None
+
+                explainer, background = build_explainer(model)
+                if explainer is None:
+                    st.info("Could not find a background dataset for SHAP explainer. Place a `balanced_dataset.csv` or `Cleaned_Dataset_Encoded.xlsx` in the project root to enable SHAP.")
+                else:
+                    with st.spinner('Computing SHAP values...'):
+                        try:
+                            # Compute SHAP values for a small background (global) and the single sample
+                            # For tree models TreeExplainer is fast; use background sample
+                            bg = background if background is not None else None
+                            # compute SHAP values for background (for global importance)
+                            shap_vals_bg = explainer.shap_values(bg)
+                        except Exception as e:
+                            st.error(f"Error computing SHAP values: {e}")
+                            shap_vals_bg = None
+
+                    # Global importance (mean abs SHAP from background)
+                    try:
+                        if isinstance(shap_vals_bg, list):
+                            # binary/multiclass: pick the positive class (last)
+                            sv = shap_vals_bg[-1]
+                        else:
+                            sv = shap_vals_bg
+                        mean_abs = pd.Series(np.abs(sv).mean(axis=0), index=bg.columns)
+                        mean_abs = mean_abs.sort_values(ascending=True)
+
+                        plt.figure(figsize=(8, 5))
+                        mean_abs.plot(kind='barh', color='teal')
+                        plt.xlabel('Mean |SHAP value|')
+                        plt.title('Global Feature Importance (SHAP)')
+                        plt.tight_layout()
+                        st.pyplot(plt)
+                        plt.clf()
+                    except Exception:
+                        st.info('Unable to render global SHAP plot.')
+
+                    # Local explanation for the current input
+                    try:
+                        # Reorder features to match background columns if needed
+                        feature_order = bg.columns.tolist()
+                        input_for_shap = features.reindex(columns=feature_order).fillna(0)
+                        shap_vals_input = explainer.shap_values(input_for_shap)
+                        if isinstance(shap_vals_input, list):
+                            sv_input = shap_vals_input[-1][0]
+                        else:
+                            sv_input = shap_vals_input[0]
+
+                        contrib = pd.Series(sv_input, index=input_for_shap.columns).sort_values(ascending=True)
+                        plt.figure(figsize=(8, 5))
+                        contrib.plot(kind='barh', color=['#d62728' if v < 0 else '#2ca02c' for v in contrib.values])
+                        plt.xlabel('SHAP value (impact on model output)')
+                        plt.title('Local Feature Contributions (SHAP)')
+                        plt.tight_layout()
+                        st.pyplot(plt)
+                        plt.clf()
+                    except Exception:
+                        st.info('Unable to render per-sample SHAP contributions.')
     
     # Footer
     st.markdown("---")
