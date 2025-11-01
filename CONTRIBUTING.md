@@ -41,6 +41,35 @@ pip install -r requirements.txt
 
 3. Verify installation by running the notebook or scripts
 
+### Running the Streamlit App (Local demo)
+
+1. Ensure dependencies are installed:
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Start the Streamlit app:
+
+```bash
+streamlit run app.py
+```
+
+This launches a local interactive demo at http://localhost:8501 by default. The app uses a saved model file `random_forest_model.pkl` (place this in the project root) and will optionally compute SHAP explanations if a background dataset is available (e.g., `balanced_dataset.csv` or `Cleaned_Dataset_Encoded.xlsx`).
+
+### Running SHAP Analysis Script
+
+There is a helper script that generates SHAP plots and outputs in `scripts/add_shap_analysis.py`.
+
+1. Make sure the trained model `random_forest_model.pkl` and the dataset `Cleaned_Dataset_Encoded.xlsx` are in the project root.
+2. Run the script:
+
+```bash
+python scripts/add_shap_analysis.py
+```
+
+This will create PNGs and a CSV with SHAP feature importance values.
+
 ## How to Contribute
 
 ### Types of Contributions
